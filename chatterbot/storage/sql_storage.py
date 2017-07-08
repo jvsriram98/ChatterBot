@@ -14,7 +14,6 @@ try:
 
     Base = declarative_base()
 
-
     class StatementTable(Base):
         """
         StatementTable, placeholder for a sentence or phrase.
@@ -97,7 +96,7 @@ try:
 
         __tablename__ = 'conversation'
 
-        id = Column(Integer, primary_key=True, autoincrement=True, default=1)
+        id = Column(Integer, primary_key=True)
 
         statements = relationship(
             'StatementTable',
@@ -347,6 +346,19 @@ class SQLStorageAdapter(StorageAdapter):
             text=response.text
         ).first()
 
+        # Make sure the statements exist
+        if not statement_query:
+            self.update(statement)
+            statement_query = session.query(StatementTable).filter_by(
+                text=statement.text
+            ).first()
+
+        if not response_query:
+            self.update(response)
+            response_query = session.query(StatementTable).filter_by(
+                text=response.text
+            ).first()
+
         conversation.statements.append(statement_query)
         conversation.statements.append(response_query)
 
@@ -358,8 +370,6 @@ class SQLStorageAdapter(StorageAdapter):
         Returns the latest response in a conversation if it exists.
         Returns None if a matching conversation cannot be found.
         """
-        from sqlalchemy import text
-
         session = self.Session()
         statement = None
 
